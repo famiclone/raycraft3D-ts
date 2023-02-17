@@ -33,6 +33,36 @@ const numRays = Math.ceil(screenWidth / stripWidth);
 const viewDist = screenWidth / 2 / Math.tan(fovHalf);
 const twoPI = Math.PI * 2;
 const numTextures = 4;
+let visibleSprites: any = [];
+
+let spriteMap: {
+  img: HTMLImageElement;
+  block: boolean;
+  visible: boolean;
+}[][] = [];
+
+let mapItems: {
+  type: number;
+  x: number;
+  y: number;
+  visible: boolean;
+  block: boolean;
+  img: HTMLImageElement;
+}[] = [];
+
+let itemTypes: {
+  img: string;
+  block: boolean;
+  name: string;
+  id: number;
+}[] = [];
+
+let enemyTypes: {
+  img: string;
+  moveSpeed: number;
+  rotationSpeed: number;
+  totalStates: number;
+}[] = [];
 
 const debugScreen = document.querySelector("#debugScreen") as HTMLElement;
 
@@ -58,6 +88,29 @@ export default class Game {
     this.level = levels[0];
 
     this.setup();
+  }
+
+  initSprites() {
+    spriteMap = [];
+    for (var y = 0; y < this.level.map.length; y++) {
+      spriteMap[y] = [];
+    }
+
+    for (var i = 0; i < mapItems.length; i++) {
+      var sprite = mapItems[i];
+      var itemType = itemTypes[sprite.type];
+      var img = document.createElement("img") as HTMLImageElement;
+      img.src = itemType.img;
+      img.style.display = "none";
+      img.style.position = "absolute";
+
+      sprite.visible = false;
+      sprite.block = itemType.block;
+      sprite.img = img;
+
+      spriteMap[sprite.y][sprite.x] = sprite;
+      this.renderer.screen.appendChild(img);
+    }
   }
 
   drawMiniMap = (): void => {
@@ -131,7 +184,9 @@ export default class Game {
   castSingleRay(rayAngle: number, stripIdx: number) {
     // first make sure the angle is between 0 and 360 degrees
     rayAngle %= twoPI;
-    if (rayAngle < 0) rayAngle += twoPI;
+    if (rayAngle < 0) {
+      rayAngle += twoPI;
+    }
 
     // moving right/left? up/down? Determined by which quadrant the angle is in.
     var right = rayAngle > twoPI * 0.75 || rayAngle < twoPI * 0.25;
@@ -146,11 +201,14 @@ export default class Game {
     var dist = 0; // the distance to the block we hit
     var xHit = 0; // the x and y coord of where the ray hit the block
     var yHit = 0;
+    let xWallHit = 0;
+    let yWallHit = 0;
 
     var textureX = 0; // the x-coord on the texture of the block, ie. what part of the texture are we going to render
     var wallX; // the (x,y) map coords of the block
     var wallY;
 
+    let wallIsShaded = false;
     var wallIsHorizontal = false;
 
     // first check against the vertical map/wall lines
@@ -168,21 +226,33 @@ export default class Game {
     var y = this.player.pos.y + (x - this.player.pos.x) * slope; // starting vertical position. We add the small horizontal step we just made, multiplied by the slope.
 
     while (x >= 0 && x < this.mapWidth && y >= 0 && y < this.mapHeight) {
-      var wallX: any = Math.floor(x + (right ? 0 : -1));
-      var wallY: any = Math.floor(y);
+      var wallX: any = x + (right ? 0 : -1);
+      var wallY: any = y >> 0;
+
+      try {
+        if (spriteMap[wallY][wallX] && !spriteMap[wallY][wallX].visible) {
+          spriteMap[wallY][wallX].visible = true;
+          visibleSprites.push(spriteMap[wallY][wallX]);
+        }
+      } catch (e) {}
 
       // is this point inside a wall block?
       if (this.level.map[wallY][wallX] > 0) {
-        var distX = x - this.player.pos.x;
-        var distY = y - this.player.pos.y;
+        let distX = x - this.player.pos.x;
+        let distY = y - this.player.pos.y;
         dist = distX * distX + distY * distY; // the distance from the player to this point, squared.
 
         wallType = this.level.map[wallY][wallX]; // we'll remember the type of wall we hit for later
         textureX = y % 1; // where exactly are we on the wall? textureX is the x coordinate on the texture that we'll use later when texturing the wall.
-        if (!right) textureX = 1 - textureX; // if we're looking to the left side of the map, the texture should be reversed
+        if (!right) {
+          textureX = 1 - textureX;
+        } // if we're looking to the left side of the map, the texture should be reversed
 
         xHit = x; // save the coordinates of the hit. We only really use these to draw the rays on minimap.
         yHit = y;
+
+        xWallHit = wallX;
+        yWallHit = wallY;
 
         wallIsHorizontal = true;
 
@@ -201,26 +271,36 @@ export default class Game {
     var dYHor = up ? -1 : 1;
     var dXHor = dYHor * slope;
     var y = up ? Math.floor(this.player.pos.y) : Math.ceil(this.player.pos.y);
-
     var x = this.player.pos.x + (y - this.player.pos.y) * slope;
 
     while (x >= 0 && x < this.mapWidth && y >= 0 && y < this.mapHeight) {
-      var wallX: any = Math.floor(y + (right ? 0 : -1));
-      var wallY: any = y >> 0;
+      var wallY: any = Math.floor(y + (up ? -1 : 0));
+      var wallX: any = x >> 0;
+
+      try {
+        if (spriteMap[wallY][wallX] && !spriteMap[wallY][wallX].visible) {
+          spriteMap[wallY][wallX].visible = true;
+          visibleSprites.push(spriteMap[wallY][wallX]);
+        }
+      } catch (e) {}
 
       if (this.level.map[wallY][wallX] > 0) {
         var distX = x - this.player.pos.x;
         var distY = y - this.player.pos.y;
-
         var blockDist = distX * distX + distY * distY;
+
         if (!dist || blockDist < dist) {
           dist = blockDist;
           xHit = x;
           yHit = y;
+          yWallHit = wallY;
+          xWallHit = wallX;
 
           wallType = this.level.map[wallY][wallX];
           textureX = x % 1;
-          if (up) textureX = 1 - textureX;
+          if (up) {
+            textureX = 1 - textureX;
+          }
         }
         break;
       }
@@ -229,7 +309,7 @@ export default class Game {
     }
 
     if (dist) {
-      this.drawRay(xHit, yHit);
+      //this.drawRay(xHit, yHit);
 
       var strip = this.renderer.screenStrips[stripIdx];
 
@@ -254,8 +334,62 @@ export default class Game {
       // it half way down the screen and then half the wall height back up.
       var top = Math.round((screenHeight - height) / 2);
 
-      strip.style.height = height + "px";
+      let imgTop = 0;
+      //@ts-ignore
+
+      let styleHeight = height;
+
+      strip.style.height = styleHeight + "px";
       strip.style.top = top + "px";
+
+      //strip.style.height = height + "px";
+      //strip.style.top = top + "px";
+
+      //var texX = Math.round(textureX * width);
+      //if (texX > width - stripWidth) texX = width - stripWidth;
+      //texX += wallIsShaded ? width : 0;
+
+      //var styleWidth = (width * 2) >> 0;
+      //if (oldStyle.width != styleWidth) {
+      //  strip.style.width = styleWidth + "px";
+      //  oldStyle.width = styleWidth;
+      //}
+
+      //var styleTop = top - imgTop;
+      //if (oldStyle.top != styleTop) {
+      //  strip.style.top = styleTop + "px";
+      //  oldStyle.top = styleTop;
+      //}
+
+      //var styleLeft = stripIdx * stripWidth - texX;
+      //if (oldStyle.left != styleLeft) {
+      //  strip.style.left = styleLeft + "px";
+      //  oldStyle.left = styleLeft;
+      //}
+
+      //var styleClip =
+      //  "rect(" +
+      //  imgTop +
+      //  ", " +
+      //  (texX + stripWidth) +
+      //  ", " +
+      //  (imgTop + height) +
+      //  ", " +
+      //  texX +
+      //  ")";
+      //if (oldStyle.clip != styleClip) {
+      //  //strip.style.clip = styleClip;
+      //  oldStyle.clip = styleClip;
+      //}
+
+      //var dwx = xWallHit - this.player.pos.x;
+      //var dwy = yWallHit - this.player.pos.y;
+      //var wallDist = dwx * dwx + dwy * dwy;
+      //var styleZIndex = -(wallDist * 1000) >> 0;
+      //if (styleZIndex != oldStyle.zIndex) {
+      //  strip.style.zIndex = styleZIndex.toString();
+      //  oldStyle.zIndex = styleZIndex;
+      //}
 
       //@ts-ignore
       strip.img.style.height = Math.floor(height * numTextures) + "px";
@@ -312,24 +446,6 @@ export default class Game {
     });
   }
 
-  drawRay(rayX: number, rayY: number): void {
-    const miniMapObjects = document.querySelector(
-      "#miniMapObjects"
-    ) as HTMLCanvasElement;
-    var objectCtx = miniMapObjects.getContext("2d") as CanvasRenderingContext2D;
-
-    objectCtx.strokeStyle = "rgba(0,100,0,0.3)";
-    objectCtx.lineWidth = 0.5;
-    objectCtx.beginPath();
-    objectCtx.moveTo(
-      this.player.pos.x * miniMapScale,
-      this.player.pos.y * miniMapScale
-    );
-    objectCtx.lineTo(rayX * miniMapScale, rayY * miniMapScale);
-    objectCtx.closePath();
-    objectCtx.stroke();
-  }
-
   setup(): void {
     const canvas = document.querySelector("canvas") as HTMLCanvasElement;
     canvas.width = 160;
@@ -337,6 +453,7 @@ export default class Game {
 
     this.mapWidth = this.level.map[0].length;
     this.mapHeight = this.level.map.length;
+    this.initSprites();
 
     this.bindKeys();
     this.drawMiniMap();
@@ -345,13 +462,18 @@ export default class Game {
   }
 
   isBlocking(x: number, y: number): boolean {
-    // first make sure that we cannot move outside the boundaries of the level
     if (y < 0 || y >= this.mapHeight || x < 0 || x >= this.mapWidth)
       return true;
 
+    var ix = Math.floor(x);
+    var iy = Math.floor(y);
+
     // return true if the map block is not 0, ie. if there is a blocking wall.
-    //console.log(this.level.map[Math.floor(y)][Math.floor(x)]);
-    return this.level.map[Math.floor(y)][Math.floor(x)] !== 0;
+    if (this.level.map[iy][ix] != 0) return true;
+
+    if (spriteMap[iy][ix] && spriteMap[iy][ix].block) return true;
+
+    return false;
   }
 
   movePlayer() {
@@ -362,7 +484,7 @@ export default class Game {
     const newY = this.player.pos.y + Math.sin(this.player.rotation) * moveStep;
 
     if (this.isBlocking(newX, newY)) {
-      console.log("is collide");
+      //console.log("is collide");
       return;
     }
 
