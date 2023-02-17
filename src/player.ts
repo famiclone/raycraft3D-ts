@@ -6,17 +6,18 @@ export default class Player extends Person {
   speed: number;
   moveSpeed: number;
   rotation: number;
-  direction: number;
+  direction: {x: number, y: number};
   rotationSpeed: number;
+  isStrafing: boolean = false;
 
   constructor(id: string) {
     super(id);
     this.id = id;
     this.pos = { x: 16, y: 10 };
     this.speed = 0;
-    this.moveSpeed = 0.050;
+    this.moveSpeed = 0.05;
     this.rotation = 0;
-    this.direction = 0;
-    this.rotationSpeed = (6 * Math.PI) / 1800;
+    this.direction = {x: 0, y: 0};
+    this.rotationSpeed = (6 * Math.PI) / 360;
   }
 }

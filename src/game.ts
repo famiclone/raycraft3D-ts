@@ -34,6 +34,7 @@ const viewDist = screenWidth / 2 / Math.tan(fovHalf);
 const twoPI = Math.PI * 2;
 const numTextures = 4;
 let visibleSprites: any = [];
+let gameCycleDelay = 1000 / 30;
 
 let spriteMap: {
   img: HTMLImageElement;
@@ -165,6 +166,110 @@ export default class Game {
     ctx.stroke();
   };
 
+  isBlocking(x: number, y: number): boolean {
+    if (y < 0 || y >= this.mapHeight || x < 0 || x >= this.mapWidth)
+      return true;
+
+    var ix = Math.floor(x);
+    var iy = Math.floor(y);
+
+    // return true if the map block is not 0, ie. if there is a blocking wall.
+    if (this.level.map[iy][ix] != 0) return true;
+
+    if (spriteMap[iy][ix] && spriteMap[iy][ix].block) return true;
+
+    return false;
+  }
+
+  checkCollision(
+    fromX: number,
+    fromY: number,
+    toX: number,
+    toY: number,
+    radius: number
+  ) {
+    var pos = {
+      x: fromX,
+      y: fromY,
+    };
+
+    if (toY < 0 || toY >= this.mapHeight || toX < 0 || toX >= this.mapWidth)
+      return pos;
+
+    var blockX = Math.floor(toX);
+    var blockY = Math.floor(toY);
+
+    if (this.isBlocking(blockX, blockY)) {
+      return pos;
+    }
+
+    pos.x = toX;
+    pos.y = toY;
+
+    var blockTop = this.isBlocking(blockX, blockY - 1);
+    var blockBottom = this.isBlocking(blockX, blockY + 1);
+    var blockLeft = this.isBlocking(blockX - 1, blockY);
+    var blockRight = this.isBlocking(blockX + 1, blockY);
+
+    if (blockTop && toY - blockY < radius) {
+      toY = pos.y = blockY + radius;
+    }
+    if (blockBottom && blockY + 1 - toY < radius) {
+      toY = pos.y = blockY + 1 - radius;
+    }
+    if (blockLeft && toX - blockX < radius) {
+      toX = pos.x = blockX + radius;
+    }
+    if (blockRight && blockX + 1 - toX < radius) {
+      toX = pos.x = blockX + 1 - radius;
+    }
+
+    // is tile to the top-left a wall
+    if (this.isBlocking(blockX - 1, blockY - 1) && !(blockTop && blockLeft)) {
+      var dx = toX - blockX;
+      var dy = toY - blockY;
+      if (dx * dx + dy * dy < radius * radius) {
+        if (dx * dx > dy * dy) toX = pos.x = blockX + radius;
+        else toY = pos.y = blockY + radius;
+      }
+    }
+    // is tile to the top-right a wall
+    if (this.isBlocking(blockX + 1, blockY - 1) && !(blockTop && blockRight)) {
+      var dx = toX - (blockX + 1);
+      var dy = toY - blockY;
+      if (dx * dx + dy * dy < radius * radius) {
+        if (dx * dx > dy * dy) toX = pos.x = blockX + 1 - radius;
+        else toY = pos.y = blockY + radius;
+      }
+    }
+    // is tile to the bottom-left a wall
+    if (
+      this.isBlocking(blockX - 1, blockY + 1) &&
+      !(blockBottom && blockBottom)
+    ) {
+      var dx = toX - blockX;
+      var dy = toY - (blockY + 1);
+      if (dx * dx + dy * dy < radius * radius) {
+        if (dx * dx > dy * dy) toX = pos.x = blockX + radius;
+        else toY = pos.y = blockY + 1 - radius;
+      }
+    }
+    // is tile to the bottom-right a wall
+    if (
+      this.isBlocking(blockX + 1, blockY + 1) &&
+      !(blockBottom && blockRight)
+    ) {
+      var dx = toX - (blockX + 1);
+      var dy = toY - (blockY + 1);
+      if (dx * dx + dy * dy < radius * radius) {
+        if (dx * dx > dy * dy) toX = pos.x = blockX + 1 - radius;
+        else toY = pos.y = blockY + 1 - radius;
+      }
+    }
+
+    return pos;
+  }
+
   castRays() {
     let stripIdx = 0;
 
@@ -182,6 +287,8 @@ export default class Game {
   }
 
   castSingleRay(rayAngle: number, stripIdx: number) {
+    // https://dev.opera.com/articles/3d-games-with-canvas-and-raycasting-part-2/
+
     // first make sure the angle is between 0 and 360 degrees
     rayAngle %= twoPI;
     if (rayAngle < 0) {
@@ -361,7 +468,7 @@ export default class Game {
 
     // change player direction by mouse
     document.addEventListener("mousemove", (e) => {
-      const x = e.clientX - window.innerWidth / 2;
+      const x = e.clientX - (window.innerWidth / 2) * this.player.rotationSpeed;
       this.player.rotation = (x / screenWidth) * 2 * Math.PI;
     });
 
@@ -369,15 +476,21 @@ export default class Game {
       switch (e.code) {
         case "KeyW":
           this.player.speed = 1;
+          this.player.direction.y = -1;
           hand.style.animation = "walk 1.5s infinite";
           break;
         case "KeyS":
           this.player.speed = -1;
+          this.player.direction.y = 1;
           hand.style.animation = "walk 1.5s infinite";
           break;
         case "KeyA":
+          this.player.direction.x = 1;
+          this.player.speed = -1;
           break;
         case "KeyD":
+          this.player.direction.x = -1;
+          this.player.speed = 1;
           break;
         case "ShiftLeft":
           this.player.speed *= 2;
@@ -390,12 +503,14 @@ export default class Game {
         case "KeyW":
         case "KeyS":
           this.player.speed = 0;
+          this.player.direction.y = 0;
           hand.style.animation = "";
 
           break;
         case "KeyA":
         case "KeyD":
-          this.player.direction = 0;
+          this.player.speed = 0;
+          this.player.direction.x = 0;
           hand.style.animation = "";
           break;
         case "ShiftLeft":
@@ -405,10 +520,6 @@ export default class Game {
   }
 
   setup(): void {
-    const canvas = document.querySelector("canvas") as HTMLCanvasElement;
-    canvas.width = 160;
-    canvas.height = 120;
-
     this.mapWidth = this.level.map[0].length;
     this.mapHeight = this.level.map.length;
     this.initSprites();
@@ -416,47 +527,38 @@ export default class Game {
     this.bindKeys();
     this.drawMiniMap();
 
+    document.body.style.imageRendering = "pixelated";
+
     this.loop(0);
   }
 
-  isBlocking(x: number, y: number): boolean {
-    if (y < 0 || y >= this.mapHeight || x < 0 || x >= this.mapWidth)
-      return true;
-
-    var ix = Math.floor(x);
-    var iy = Math.floor(y);
-
-    // return true if the map block is not 0, ie. if there is a blocking wall.
-    if (this.level.map[iy][ix] != 0) return true;
-
-    if (spriteMap[iy][ix] && spriteMap[iy][ix].block) return true;
-
-    return false;
-  }
-
-  movePlayer() {
+  movePlayer(entity: any, dt: number) {
     const moveStep = this.player.moveSpeed * this.player.speed;
-    this.player.rotation += this.player.direction * this.player.rotationSpeed;
 
-    const newX = this.player.pos.x + Math.cos(this.player.rotation) * moveStep;
-    const newY = this.player.pos.y + Math.sin(this.player.rotation) * moveStep;
+    // player must rotate and move on each side
+    let newX = this.player.pos.x + Math.cos(this.player.rotation) * moveStep;
+    let newY = this.player.pos.y + Math.sin(this.player.rotation) * moveStep;
+
+    if (this.player.direction.x !== 0) {
+      newX = this.player.pos.x + Math.cos(this.player.rotation + Math.PI / 2) * moveStep;
+      newY = this.player.pos.y + Math.sin(this.player.rotation + Math.PI / 2) * moveStep;
+    }
 
     if (this.isBlocking(newX, newY)) {
-      //console.log("is collide");
       return;
     }
 
     this.player.pos.x = newX;
     this.player.pos.y = newY;
-    this.player.rotation += this.player.direction * this.player.rotationSpeed;
 
     if (this.player.rotation < 0) this.player.rotation += Math.PI * 2;
-    if (this.player.rotation >= Math.PI * 2)
+    if (this.player.rotation >= Math.PI * 2) {
       this.player.rotation -= Math.PI * 2;
+    }
   }
 
   update(dt: number) {
-    this.movePlayer();
+    this.movePlayer(null, dt);
     this.updateMiniMap();
     this.castRays();
 
@@ -464,6 +566,7 @@ export default class Game {
       FPS: ${Math.round(1 / dt)}
       PLAYER X: ${this.player.pos.x}
       PLAYER Y: ${this.player.pos.y}
+      PLAYER ANGLE: ${this.player.rotation}
       DT: ${dt}
     `;
   }

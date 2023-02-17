@@ -4,7 +4,7 @@ export default class Person {
   speed: number;
   moveSpeed: number;
   rotation: number;
-  direction: number;
+  direction: { x: number; y: number };
   rotationSpeed: number;
 
   constructor(id: string) {
@@ -13,7 +13,7 @@ export default class Person {
     this.speed = 0;
     this.moveSpeed = 0;
     this.rotation = 0;
-    this.direction = 0;
+    this.direction = { x: 0, y: 0 };
     this.rotationSpeed = 0;
   }
 }

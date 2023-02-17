@@ -1,3 +1,43 @@
+class HUD {
+  _canvas: HTMLCanvasElement;
+  _ctx: CanvasRenderingContext2D;
+
+  constructor(width: number, height: number) {
+    this._canvas = document.createElement("canvas") as HTMLCanvasElement;
+    this._canvas.width = width;
+    this._canvas.height = height;
+    this._canvas.style.position = "absolute";
+    this._canvas.style.top = "0";
+    this._canvas.style.left = "0";
+    this._canvas.id = "hud";
+    this._ctx = this._canvas.getContext("2d") as CanvasRenderingContext2D;
+
+    this.renderCrosshair();
+  }
+
+  get canvas() {
+    return this._canvas;
+  }
+
+  get ctx() {
+    return this._ctx;
+  }
+
+  renderCrosshair() {
+    this._ctx.beginPath();
+    this._ctx.moveTo(this.canvas.width / 2, this._canvas.height / 2);
+    this._ctx.lineTo(this._canvas.width / 2 + 10, this._canvas.height / 2);
+    this._ctx.moveTo(this._canvas.width / 2, this._canvas.height / 2);
+    this._ctx.lineTo(this._canvas.width / 2 - 10, this._canvas.height / 2);
+    this._ctx.moveTo(this._canvas.width / 2, this._canvas.height / 2);
+    this._ctx.lineTo(this._canvas.width / 2, this._canvas.height / 2 + 10);
+    this._ctx.moveTo(this._canvas.width / 2, this._canvas.height / 2);
+    this._ctx.lineTo(this._canvas.width / 2, this._canvas.height / 2 - 10);
+    this._ctx.strokeStyle = "red";
+    this._ctx.stroke();
+  }
+}
+
 export default class Renderer {
   screen: HTMLElement;
   width: number;
@@ -7,8 +47,8 @@ export default class Renderer {
 
   constructor() {
     this.screen = document.createElement("div");
-    this.width = window.innerWidth;
-    this.height = window.innerHeight;
+    this.width = 320;
+    this.height = 200;
     this.screen.id = "screen";
     document.body.prepend(this.screen);
 
@@ -16,6 +56,9 @@ export default class Renderer {
   }
 
   init() {
+    document.body.style.cursor = "none";
+    const hud = new HUD(this.width, this.height);
+
     const floor = document.createElement("div");
     floor.id = "floor";
 
@@ -32,6 +75,7 @@ export default class Renderer {
     this.screen.appendChild(ceiling);
     this.screen.appendChild(level);
     this.screen.appendChild(hand);
+    this.screen.appendChild(hud.canvas);
 
     for (let i = 0; i < this.width; i += this.stripWidth) {
       const strip = document.createElement("div");
