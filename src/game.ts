@@ -334,62 +334,12 @@ export default class Game {
       // it half way down the screen and then half the wall height back up.
       var top = Math.round((screenHeight - height) / 2);
 
-      let imgTop = 0;
       //@ts-ignore
 
       let styleHeight = height;
 
       strip.style.height = styleHeight + "px";
       strip.style.top = top + "px";
-
-      //strip.style.height = height + "px";
-      //strip.style.top = top + "px";
-
-      //var texX = Math.round(textureX * width);
-      //if (texX > width - stripWidth) texX = width - stripWidth;
-      //texX += wallIsShaded ? width : 0;
-
-      //var styleWidth = (width * 2) >> 0;
-      //if (oldStyle.width != styleWidth) {
-      //  strip.style.width = styleWidth + "px";
-      //  oldStyle.width = styleWidth;
-      //}
-
-      //var styleTop = top - imgTop;
-      //if (oldStyle.top != styleTop) {
-      //  strip.style.top = styleTop + "px";
-      //  oldStyle.top = styleTop;
-      //}
-
-      //var styleLeft = stripIdx * stripWidth - texX;
-      //if (oldStyle.left != styleLeft) {
-      //  strip.style.left = styleLeft + "px";
-      //  oldStyle.left = styleLeft;
-      //}
-
-      //var styleClip =
-      //  "rect(" +
-      //  imgTop +
-      //  ", " +
-      //  (texX + stripWidth) +
-      //  ", " +
-      //  (imgTop + height) +
-      //  ", " +
-      //  texX +
-      //  ")";
-      //if (oldStyle.clip != styleClip) {
-      //  //strip.style.clip = styleClip;
-      //  oldStyle.clip = styleClip;
-      //}
-
-      //var dwx = xWallHit - this.player.pos.x;
-      //var dwy = yWallHit - this.player.pos.y;
-      //var wallDist = dwx * dwx + dwy * dwy;
-      //var styleZIndex = -(wallDist * 1000) >> 0;
-      //if (styleZIndex != oldStyle.zIndex) {
-      //  strip.style.zIndex = styleZIndex.toString();
-      //  oldStyle.zIndex = styleZIndex;
-      //}
 
       //@ts-ignore
       strip.img.style.height = Math.floor(height * numTextures) + "px";
@@ -408,6 +358,13 @@ export default class Game {
   }
   bindKeys() {
     const hand = document.querySelector("#hand") as HTMLElement;
+
+    // change player direction by mouse
+    document.addEventListener("mousemove", (e) => {
+      const x = e.clientX - window.innerWidth / 2;
+      this.player.rotation = (x / screenWidth) * 2 * Math.PI;
+    });
+
     document.addEventListener("keydown", (e) => {
       switch (e.code) {
         case "KeyW":
@@ -419,12 +376,11 @@ export default class Game {
           hand.style.animation = "walk 1.5s infinite";
           break;
         case "KeyA":
-          this.player.direction = -1;
-          //hand.style.animation = "walk 1.5s infinite";
           break;
         case "KeyD":
-          this.player.direction = 1;
-          //hand.style.animation = "walk 1.5s infinite";
+          break;
+        case "ShiftLeft":
+          this.player.speed *= 2;
           break;
       }
     });
@@ -442,6 +398,8 @@ export default class Game {
           this.player.direction = 0;
           hand.style.animation = "";
           break;
+        case "ShiftLeft":
+          this.player.speed /= 2;
       }
     });
   }

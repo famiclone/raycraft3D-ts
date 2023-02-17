@@ -14,7 +14,7 @@ export default class Player extends Person {
     this.id = id;
     this.pos = { x: 16, y: 10 };
     this.speed = 0;
-    this.moveSpeed = 0.018;
+    this.moveSpeed = 0.050;
     this.rotation = 0;
     this.direction = 0;
     this.rotationSpeed = (6 * Math.PI) / 1800;

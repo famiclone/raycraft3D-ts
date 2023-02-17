@@ -7,8 +7,8 @@ export default class Renderer {
 
   constructor() {
     this.screen = document.createElement("div");
-    this.width = 640;
-    this.height = 480;
+    this.width = window.innerWidth;
+    this.height = window.innerHeight;
     this.screen.id = "screen";
     document.body.prepend(this.screen);
 
