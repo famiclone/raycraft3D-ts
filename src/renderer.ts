@@ -44,12 +44,15 @@ export default class Renderer {
   height: number;
   stripWidth = 2;
   screenStrips: HTMLElement[] = [];
+  skybox: HTMLElement;
 
   constructor() {
     this.screen = document.createElement("div");
     this.width = 320;
     this.height = 200;
     this.screen.id = "screen";
+    this.skybox = document.createElement("div");
+
     document.body.prepend(this.screen);
 
     this.init();
@@ -62,8 +65,7 @@ export default class Renderer {
     const floor = document.createElement("div");
     floor.id = "floor";
 
-    const ceiling = document.createElement("div");
-    ceiling.id = "ceiling";
+    this.skybox.id = "ceiling";
 
     const level = document.createElement("div");
     level.id = "level";
@@ -72,7 +74,7 @@ export default class Renderer {
     hand.id = "hand";
 
     this.screen.appendChild(floor);
-    this.screen.appendChild(ceiling);
+    this.screen.appendChild(this.skybox);
     this.screen.appendChild(level);
     this.screen.appendChild(hand);
     this.screen.appendChild(hud.canvas);

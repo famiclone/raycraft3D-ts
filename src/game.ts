@@ -34,7 +34,7 @@ const viewDist = screenWidth / 2 / Math.tan(fovHalf);
 const twoPI = Math.PI * 2;
 const numTextures = 4;
 let visibleSprites: any = [];
-let gameCycleDelay = 1000 / 30;
+let tickCount = 0;
 
 let spriteMap: {
   img: HTMLImageElement;
@@ -81,6 +81,7 @@ export default class Game {
   renderer: Renderer;
   controller: unknown;
   player: Player;
+  dayTime: number = 0; // 0 - 23
 
   constructor() {
     this.player = new Player("player");
@@ -416,8 +417,6 @@ export default class Game {
     }
 
     if (dist) {
-      //this.drawRay(xHit, yHit);
-
       var strip = this.renderer.screenStrips[stripIdx];
 
       dist = Math.sqrt(dist);
@@ -540,20 +539,46 @@ export default class Game {
     let newY = this.player.pos.y + Math.sin(this.player.rotation) * moveStep;
 
     if (this.player.direction.x !== 0) {
-      newX = this.player.pos.x + Math.cos(this.player.rotation + Math.PI / 2) * moveStep;
-      newY = this.player.pos.y + Math.sin(this.player.rotation + Math.PI / 2) * moveStep;
+      newX =
+        this.player.pos.x +
+        Math.cos(this.player.rotation + Math.PI / 2) * moveStep;
+      newY =
+        this.player.pos.y +
+        Math.sin(this.player.rotation + Math.PI / 2) * moveStep;
     }
 
-    if (this.isBlocking(newX, newY)) {
-      return;
-    }
+    const pos = this.checkCollision(
+      this.player.pos.x,
+      this.player.pos.y,
+      newX,
+      newY,
+      0.35
+    );
 
-    this.player.pos.x = newX;
-    this.player.pos.y = newY;
+    this.player.pos.x = pos.x;
+    this.player.pos.y = pos.y;
 
     if (this.player.rotation < 0) this.player.rotation += Math.PI * 2;
     if (this.player.rotation >= Math.PI * 2) {
       this.player.rotation -= Math.PI * 2;
+    }
+  }
+
+  render() {
+    if (this.dayTime < 12) {
+      this.renderer.skybox.style.backgroundColor = `rgba(${
+        99 / (12 / this.dayTime)
+      }, 
+    ${155 / (12 / this.dayTime)},
+    ${255 / (12 / this.dayTime)}
+    , 1)`;
+    } else {
+      this.renderer.skybox.style.backgroundColor = `rgba(${
+        99 / (12 / (24 - this.dayTime))
+      }, 
+      ${155 / (12 / (24 - this.dayTime))},
+      ${255 / (12 / (24 - this.dayTime))}
+      , 1)`;
     }
   }
 
@@ -562,8 +587,18 @@ export default class Game {
     this.updateMiniMap();
     this.castRays();
 
+    tickCount += -dt;
+
+    if (tickCount > 100) {
+      this.dayTime += 0.01;
+
+      if (this.dayTime > 23) {
+        this.dayTime = 0;
+      }
+
+      tickCount = 0;
+    }
     debugScreen.innerText = `
-      FPS: ${Math.round(1 / dt)}
       PLAYER X: ${this.player.pos.x}
       PLAYER Y: ${this.player.pos.y}
       PLAYER ANGLE: ${this.player.rotation}
@@ -577,6 +612,7 @@ export default class Game {
     lastTime = ts;
 
     this.update(dt);
+    this.render();
 
     requestAnimationFrame(this.loop.bind(this));
   }
