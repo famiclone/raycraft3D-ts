@@ -1,5 +1,6 @@
 //@ts-ignore
 import levels from "./levels.js";
+import Person from "./person.js";
 import Player from "./player";
 import Renderer from "./renderer";
 
@@ -531,36 +532,32 @@ export default class Game {
     this.loop(0);
   }
 
-  movePlayer(entity: any, dt: number) {
-    const moveStep = this.player.moveSpeed * this.player.speed;
+  movePlayer(entity: Person, dt: number) {
+    const moveStep = entity.moveSpeed * entity.speed;
 
     // player must rotate and move on each side
-    let newX = this.player.pos.x + Math.cos(this.player.rotation) * moveStep;
-    let newY = this.player.pos.y + Math.sin(this.player.rotation) * moveStep;
+    let newX = entity.pos.x + Math.cos(entity.rotation) * moveStep * -dt;
+    let newY = entity.pos.y + Math.sin(entity.rotation) * moveStep * -dt;
 
-    if (this.player.direction.x !== 0) {
-      newX =
-        this.player.pos.x +
-        Math.cos(this.player.rotation + Math.PI / 2) * moveStep;
-      newY =
-        this.player.pos.y +
-        Math.sin(this.player.rotation + Math.PI / 2) * moveStep;
+    if (entity.direction.x !== 0) {
+      newX = entity.pos.x + Math.cos(entity.rotation + Math.PI / 2) * moveStep * -dt;
+      newY = entity.pos.y + Math.sin(entity.rotation + Math.PI / 2) * moveStep * -dt;
     }
 
     const pos = this.checkCollision(
-      this.player.pos.x,
-      this.player.pos.y,
+      entity.pos.x,
+      entity.pos.y,
       newX,
       newY,
       0.35
     );
 
-    this.player.pos.x = pos.x;
-    this.player.pos.y = pos.y;
+    entity.pos.x = pos.x;
+    entity.pos.y = pos.y;
 
-    if (this.player.rotation < 0) this.player.rotation += Math.PI * 2;
-    if (this.player.rotation >= Math.PI * 2) {
-      this.player.rotation -= Math.PI * 2;
+    if (entity.rotation < 0) entity.rotation += Math.PI * 2;
+    if (entity.rotation >= Math.PI * 2) {
+      entity.rotation -= Math.PI * 2;
     }
   }
 
@@ -583,7 +580,7 @@ export default class Game {
   }
 
   update(dt: number) {
-    this.movePlayer(null, dt);
+    this.movePlayer(this.player, dt);
     this.updateMiniMap();
     this.castRays();
 
