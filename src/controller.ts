@@ -6,6 +6,7 @@ class Controller {
 
   constructor(game: Game) {
     this.game = game;
+    this.enablePointerLock();
     this.init();
   }
 
@@ -50,12 +51,17 @@ class Controller {
         this.keysPressed[e.code] = false;
     }
   }
+  enablePointerLock() {
+    document.addEventListener('click', () => {
+      document.body.requestPointerLock();
+    });
+
+    document.addEventListener('mousemove', this.onMouseMove.bind(this));
+  }
 
   onMouseMove(e: MouseEvent) {
-    document.addEventListener("mousemove", (e) => {
-      const x = e.clientX - (window.innerWidth / 2) * this.game.player.rotationSpeed;
-      this.game.player.rotation = (x / this.game.renderer.width) * 2 * Math.PI;
-    });
+    const rotationChange = e.movementX * this.game.player.rotationSpeed;
+    this.game.player.rotation += rotationChange;
   }
 
 

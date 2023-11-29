@@ -55,7 +55,19 @@ export default class Renderer {
 
     document.body.prepend(this.screen);
 
+    // TODO: enable resizing when canvas renderer is implemented
+    //window.addEventListener("resize", this.onResize.bind(this));
+
     this.init();
+  }
+
+  onResize() {
+    const aspectRatio = this.width / this.height;
+    const newWidth = window.innerWidth;
+    const newHeight = newWidth / aspectRatio;
+
+    this.screen.style.width = newWidth + "px";
+    this.screen.style.height = newHeight + "px";
   }
 
   init() {
@@ -104,11 +116,11 @@ export default class Renderer {
     }
   }
 
-  drawRay() {}
+  drawRay() { }
 
-  castSingleRay() {}
+  castSingleRay() { }
 
-  drawMiniMap() {}
+  drawMiniMap() { }
 
-  updateMiniMap() {}
+  updateMiniMap() { }
 }
