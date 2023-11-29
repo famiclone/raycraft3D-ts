@@ -18,6 +18,6 @@ export default class Player extends Person {
     this.moveSpeed = 0.005;
     this.rotation = 0;
     this.direction = {x: 0, y: 0};
-    this.rotationSpeed = (6 * Math.PI) / 360;
+    this.rotationSpeed = (1 * Math.PI) / 360;
   }
 }

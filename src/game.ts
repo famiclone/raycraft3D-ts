@@ -526,6 +526,7 @@ export default class Game {
   }
 
   update(dt: number) {
+    this.controller.update(dt);
     this.movePlayer(this.player, dt);
     this.updateMiniMap();
     this.castRays();

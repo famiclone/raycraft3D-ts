@@ -17,29 +17,18 @@ class Controller {
     switch (e.code) {
       case "KeyW":
         this.keysPressed[e.code] = true;
-        this.game.player.speed = 1;
-        this.game.player.direction.y = -1;
-        //hand.style.animation = "walk 1.5s infinite";
         break;
       case "KeyS":
         this.keysPressed[e.code] = true;
-        this.game.player.speed = -1;
-        this.game.player.direction.y = 1;
-        //hand.style.animation = "walk 1.5s infinite";
         break;
       case "KeyA":
         this.keysPressed[e.code] = true;
-        this.game.player.direction.x = 1;
-        this.game.player.speed = -1;
         break;
       case "KeyD":
         this.keysPressed[e.code] = true;
-        this.game.player.direction.x = -1;
-        this.game.player.speed = 1;
         break;
       case "ShiftLeft":
         this.keysPressed[e.code] = true;
-        this.game.player.speed *= 2;
         break;
     }
   }
@@ -51,22 +40,14 @@ class Controller {
         this.keysPressed[e.code] = false;
       case "KeyS":
         this.keysPressed[e.code] = false;
-        this.game.player.speed = 0;
-        this.game.player.direction.y = 0;
-        //hand.style.animation = "";
-
         break;
       case "KeyA":
         this.keysPressed[e.code] = false;
       case "KeyD":
         this.keysPressed[e.code] = false;
-        this.game.player.speed = 0;
-        this.game.player.direction.x = 0;
-        //hand.style.animation = "";
         break;
       case "ShiftLeft":
         this.keysPressed[e.code] = false;
-        this.game.player.speed /= 2;
     }
   }
 
@@ -82,6 +63,58 @@ class Controller {
     console.log("Controller initialized");
     window.addEventListener("keydown", this.onKeydown.bind(this));
     window.addEventListener("keyup", this.onKeyup.bind(this));
+    window.addEventListener("mousemove", this.onMouseMove.bind(this));
+  }
+
+  update(dt: number) {
+    if (this.isKeyPressed("KeyW")) {
+      this.game.player.speed = 1;
+      this.game.player.direction.y = -1;
+      //hand.style.animation = "walk 1.5s infinite";
+    }
+
+    if (this.isKeyPressed("KeyS")) {
+      this.game.player.speed = -1;
+      this.game.player.direction.y = 1;
+      //hand.style.animation = "walk 1.5s infinite";
+    }
+
+    if (this.isKeyPressed("KeyA")) {
+      this.game.player.direction.x = 1;
+      this.game.player.speed = -1;
+      //hand.style.animation = "walk 1.5s infinite";
+    }
+
+    if (this.isKeyPressed("KeyD")) {
+      this.game.player.direction.x = -1;
+      this.game.player.speed = 1;
+      //hand.style.animation = "walk 1.5s infinite";
+    }
+
+    if (this.isKeyPressed("ShiftLeft")) {
+      this.game.player.speed *= 2;
+    }
+
+    if (this.isKeyPressed("Space")) {
+      this.game.player.speed = 0;
+      this.game.player.direction.y = 0;
+      this.game.player.direction.x = 0;
+      //hand.style.animation = "";
+    }
+
+
+    // if key not pressed, stop moving
+    if (!this.isKeyPressed("KeyW") && !this.isKeyPressed("KeyS")) {
+      this.game.player.direction.y = 0;
+    }
+
+    if (!this.isKeyPressed("KeyA") && !this.isKeyPressed("KeyD")) {
+      this.game.player.direction.x = 0;
+    }
+
+    if (!this.isKeyPressed("ShiftLeft")) {
+      this.game.player.speed /= 2;
+    }
   }
 }
 
