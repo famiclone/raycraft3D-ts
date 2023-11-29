@@ -3,6 +3,7 @@ import levels from "./levels.js";
 import Person from "./person.js";
 import Player from "./player";
 import Renderer from "./renderer";
+import Controller from "./controller";
 
 type Level = {
   id: number;
@@ -80,13 +81,14 @@ export default class Game {
   mapHeight: number = 0;
   level: Level;
   renderer: Renderer;
-  controller: unknown;
   player: Player;
+  controller: Controller;
   dayTime: number = 0; // 0 - 23
 
   constructor() {
     this.player = new Player("player");
     this.renderer = new Renderer();
+    this.controller = new Controller(this);
     this.state = "mainmenu";
     this.level = levels[0];
 
@@ -463,68 +465,12 @@ export default class Game {
       strip.img.style.left = -texX + "px";
     }
   }
-  bindKeys() {
-    const hand = document.querySelector("#hand") as HTMLElement;
-
-    // change player direction by mouse
-    document.addEventListener("mousemove", (e) => {
-      const x = e.clientX - (window.innerWidth / 2) * this.player.rotationSpeed;
-      this.player.rotation = (x / screenWidth) * 2 * Math.PI;
-    });
-
-    document.addEventListener("keydown", (e) => {
-      switch (e.code) {
-        case "KeyW":
-          this.player.speed = 1;
-          this.player.direction.y = -1;
-          hand.style.animation = "walk 1.5s infinite";
-          break;
-        case "KeyS":
-          this.player.speed = -1;
-          this.player.direction.y = 1;
-          hand.style.animation = "walk 1.5s infinite";
-          break;
-        case "KeyA":
-          this.player.direction.x = 1;
-          this.player.speed = -1;
-          break;
-        case "KeyD":
-          this.player.direction.x = -1;
-          this.player.speed = 1;
-          break;
-        case "ShiftLeft":
-          this.player.speed *= 2;
-          break;
-      }
-    });
-
-    document.addEventListener("keyup", (e) => {
-      switch (e.code) {
-        case "KeyW":
-        case "KeyS":
-          this.player.speed = 0;
-          this.player.direction.y = 0;
-          hand.style.animation = "";
-
-          break;
-        case "KeyA":
-        case "KeyD":
-          this.player.speed = 0;
-          this.player.direction.x = 0;
-          hand.style.animation = "";
-          break;
-        case "ShiftLeft":
-          this.player.speed /= 2;
-      }
-    });
-  }
 
   setup(): void {
     this.mapWidth = this.level.map[0].length;
     this.mapHeight = this.level.map.length;
     this.initSprites();
 
-    this.bindKeys();
     this.drawMiniMap();
 
     document.body.style.imageRendering = "pixelated";
