@@ -4,5 +4,4 @@ const game = new Game();
 
 //@ts-ignore
 window.game = game;
-game.setup();
 

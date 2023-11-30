@@ -101,7 +101,7 @@ export default class Renderer {
       strip.style.backgroundColor = "magenta";
 
       const img = new Image();
-      img.src = "public/walls.png";
+      img.src = "public/textures.png";
       img.style.position = "absolute";
       img.style.left = "0px";
 

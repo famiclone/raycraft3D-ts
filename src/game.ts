@@ -4,6 +4,7 @@ import Person from "./person.js";
 import Player from "./player";
 import Renderer from "./renderer";
 import Controller from "./controller";
+import AssetLoader from "./asset-loader";
 
 type Level = {
   id: number;
@@ -24,17 +25,17 @@ const miniMap = document.querySelector("#miniMap") as HTMLCanvasElement;
 const miniMapObjects = document.querySelector(
   "#miniMapObjects"
 ) as HTMLCanvasElement;
-let miniMapScale = 8;
+let miniMapScale = 4;
 let lastTime = 0;
 const screenWidth = 320;
 const screenHeight = 200;
 const stripWidth = 2;
 const fov = (60 * Math.PI) / 180;
-const fovHalf = fov / 2;
+const fovHalf = fov / 1.5;
 const numRays = Math.ceil(screenWidth / stripWidth);
 const viewDist = screenWidth / 2 / Math.tan(fovHalf);
 const twoPI = Math.PI * 2;
-const numTextures = 4;
+const numTextures = 512 / 8;
 let visibleSprites: any = [];
 let tickCount = 0;
 
@@ -83,16 +84,22 @@ export default class Game {
   renderer: Renderer;
   player: Player;
   controller: Controller;
+  assetLoader: AssetLoader;
   dayTime: number = 0; // 0 - 23
 
   constructor() {
+    this.assetLoader = new AssetLoader();
     this.player = new Player("player");
     this.renderer = new Renderer();
     this.controller = new Controller(this);
     this.state = "mainmenu";
     this.level = levels[0];
 
-    this.setup();
+    this.assetLoader.loadAssets([
+      "public/textures.png",
+    ])
+      .then((assets: { [key: string]: any }) => {this.setup(assets)}
+    );
   }
 
   initSprites() {
@@ -345,7 +352,7 @@ export default class Game {
           spriteMap[wallY][wallX].visible = true;
           visibleSprites.push(spriteMap[wallY][wallX]);
         }
-      } catch (e) {}
+      } catch (e) { }
 
       // is this point inside a wall block?
       if (this.level.map[wallY][wallX] > 0) {
@@ -393,7 +400,7 @@ export default class Game {
           spriteMap[wallY][wallX].visible = true;
           visibleSprites.push(spriteMap[wallY][wallX]);
         }
-      } catch (e) {}
+      } catch (e) { }
 
       if (this.level.map[wallY][wallX] > 0) {
         var distX = x - this.player.pos.x;
@@ -451,9 +458,9 @@ export default class Game {
       strip.style.top = top + "px";
 
       //@ts-ignore
-      strip.img.style.height = Math.floor(height * numTextures) + "px";
+      strip.img.style.height = Math.floor(height * numTextures / 2) + "px";
       //@ts-ignore
-      strip.img.style.width = Math.floor(width * 2) + "px";
+      strip.img.style.width = Math.floor(width * numTextures / 2) + "px";
       //@ts-ignore
       strip.img.style.top = -Math.floor(height * (wallType - 1)) + "px";
 
@@ -466,10 +473,12 @@ export default class Game {
     }
   }
 
-  setup(): void {
+  setup(assets: { [key: string]: any }): void {
     this.mapWidth = this.level.map[0].length;
     this.mapHeight = this.level.map.length;
     this.initSprites();
+
+    console.log(assets);
 
     this.drawMiniMap();
 
@@ -509,16 +518,14 @@ export default class Game {
 
   render() {
     if (this.dayTime < 12) {
-      this.renderer.skybox.style.backgroundColor = `rgba(${
-        99 / (12 / this.dayTime)
-      }, 
+      this.renderer.skybox.style.backgroundColor = `rgba(${99 / (12 / this.dayTime)
+        }, 
     ${155 / (12 / this.dayTime)},
     ${255 / (12 / this.dayTime)}
     , 1)`;
     } else {
-      this.renderer.skybox.style.backgroundColor = `rgba(${
-        99 / (12 / (24 - this.dayTime))
-      }, 
+      this.renderer.skybox.style.backgroundColor = `rgba(${99 / (12 / (24 - this.dayTime))
+        }, 
       ${155 / (12 / (24 - this.dayTime))},
       ${255 / (12 / (24 - this.dayTime))}
       , 1)`;
